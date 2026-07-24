@@ -5,7 +5,8 @@ macro_rules! cache {
             struct Header {
                 ptr: *const ($key, $value),
                 len: usize,
-                _pad: [u64; 6],
+                capacity: usize,
+                _pad: [u64; 5],
             }
 
             struct Retired {
@@ -67,11 +68,13 @@ macro_rules! cache {
 
                 let ptr = data.as_ptr();
                 let len = data.len();
+                let capacity = data.capacity();
                 std::mem::forget(data);
                 let header = Box::into_raw(Box::new(Header {
                     ptr,
                     len,
-                    _pad: [0; 6],
+                    capacity,
+                    _pad: [0; 5],
                 }));
                 let prev = CURRENT.swap(header, ::std::sync::atomic::Ordering::Release);
                 let generation = GENERATION.fetch_add(1, ::std::sync::atomic::Ordering::Release) + 1;
@@ -89,7 +92,7 @@ macro_rules! cache {
                     while let Some(&(hdr, generation)) = list.front() {
                         if generation + 2 < min_gen {
                             let h = Box::from_raw(hdr);
-                            let _ = Vec::from_raw_parts(h.ptr as *mut u64, h.len, h.len);
+                            let _ = Vec::from_raw_parts(h.ptr as *mut u64, h.len, h.capacity);
                             list.pop_front();
                         } else {
                             break;
