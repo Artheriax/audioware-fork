@@ -6,12 +6,13 @@ macro_rules! cache {
                 ptr: *const ($key, $value),
                 len: usize,
                 capacity: usize,
+                generation: u64,
             }
 
             type PaddedHeader = ::crossbeam::utils::CachePadded<Header>;
 
             struct Retired {
-                pub(super) list: ::std::cell::UnsafeCell<::std::collections::VecDeque<(*mut PaddedHeader, u64)>>,
+                pub(super) list: ::std::cell::UnsafeCell<::std::collections::VecDeque<*mut PaddedHeader>>,
             }
 
             /// Safety: single-writer invariant
@@ -72,17 +73,18 @@ macro_rules! cache {
                 let len = data.len();
                 let capacity = data.capacity();
                 std::mem::forget(data);
+                let generation = GENERATION.fetch_add(1, ::std::sync::atomic::Ordering::Release) + 1;
                 let header = Box::into_raw(Box::new(PaddedHeader::new(Header {
                     ptr,
                     len,
                     capacity,
+                    generation,
                 })));
                 let prev = CURRENT.swap(header, ::std::sync::atomic::Ordering::Release);
-                let generation = GENERATION.fetch_add(1, ::std::sync::atomic::Ordering::Release) + 1;
                 if !prev.is_null() {
                     unsafe {
                         let list = &mut *retired().list.get();
-                        list.push_back((prev, generation));
+                        list.push_back(prev);
                     }
                 }
             }
@@ -90,8 +92,8 @@ macro_rules! cache {
                 let min_gen = GENERATION.load(::std::sync::atomic::Ordering::Acquire);
                 unsafe {
                     let list = &mut *retired().list.get();
-                    while let Some(&(hdr, generation)) = list.front() {
-                        if generation + 2 < min_gen {
+                    while let Some(&hdr) = list.front() {
+                        if (&(*hdr)).generation + 2 < min_gen {
                             let h = Box::from_raw(hdr);
                             let _ = Vec::from_raw_parts(h.ptr as *mut u64, h.len, h.capacity);
                             list.pop_front();
