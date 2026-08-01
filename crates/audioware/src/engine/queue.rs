@@ -159,7 +159,7 @@ pub fn run(
         let oi_demitter = sel.recv(&rde);
         let oi_sync = sel.recv(&synchronization);
         let oi_reclaim = sel.recv(&reclamation);
-        let oper = sel.select();
+        let oper = sel.select_timeout(ms(15));
 
         let mut pre_lifecycle: Option<Lifecycle> = None;
         let mut pre_command: Option<Command> = None;
@@ -169,21 +169,23 @@ pub fn run(
         let mut sync_fired = false;
         let mut reclaim_fired = false;
 
-        match oper.index() {
-            i if i == oi_lifecycle => pre_lifecycle = oper.recv(&rl).ok(),
-            i if i == oi_command => pre_command = oper.recv(&rc).ok(),
-            i if i == oi_callback => pre_callback = oper.recv(&re).ok(),
-            i if i == oi_dsound => pre_dsound = oper.recv(&rds).ok(),
-            i if i == oi_demitter => pre_demitter = oper.recv(&rde).ok(),
-            i if i == oi_sync => {
-                let _ = oper.recv(&synchronization);
-                sync_fired = true;
+        if let Ok(oper) = oper {
+            match oper.index() {
+                i if i == oi_lifecycle => pre_lifecycle = oper.recv(&rl).ok(),
+                i if i == oi_command => pre_command = oper.recv(&rc).ok(),
+                i if i == oi_callback => pre_callback = oper.recv(&re).ok(),
+                i if i == oi_dsound => pre_dsound = oper.recv(&rds).ok(),
+                i if i == oi_demitter => pre_demitter = oper.recv(&rde).ok(),
+                i if i == oi_sync => {
+                    let _ = oper.recv(&synchronization);
+                    sync_fired = true;
+                }
+                i if i == oi_reclaim => {
+                    let _ = oper.recv(&reclamation);
+                    reclaim_fired = true;
+                }
+                _ => unreachable!(),
             }
-            i if i == oi_reclaim => {
-                let _ = oper.recv(&reclamation);
-                reclaim_fired = true;
-            }
-            _ => unreachable!(),
         }
 
         if state.contains(Flags::MUTE_IN_BACKGROUND) {
