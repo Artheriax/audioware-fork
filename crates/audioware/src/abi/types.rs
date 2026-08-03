@@ -185,7 +185,13 @@ impl ToInterpolation for Ref<Tween> {
                     },
                 })
             }
-            _ => unreachable!(),
+            _ => {
+                fails!(
+                    "unsupported conversion to interpolation: {}",
+                    <Self as red4ext_rs::NativeRepr>::NAME
+                );
+                None
+            }
         }
     }
 }
