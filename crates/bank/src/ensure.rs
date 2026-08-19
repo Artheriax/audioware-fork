@@ -195,6 +195,16 @@ pub fn ensure_manifest_no_duplicates(manifest: &Manifest) -> Result<(), Error> {
             );
         }
     }
+    if let Some(playlists) = manifest.playlist.as_ref() {
+        for playlist in playlists.values() {
+            for key in playlist.songs.keys() {
+                ensure!(
+                    hashset.insert(key.as_str()),
+                    ConflictingKeySnafu { cname: key.clone() }
+                );
+            }
+        }
+    }
     Ok(())
 }
 
@@ -725,6 +735,46 @@ pub fn ensure_jingles<'a>(
 
     if !existed {
         CNamePool::add_cstr(&c_string);
+    }
+    Ok(())
+}
+
+/// Ensure [Playlist] guarantees are upheld.
+///
+/// Each song inside a playlist is registered as its own `Id` with
+/// `Source::Playlist`, which routes it to the `radioport` track (controlled
+/// by `RadioportVolume`). The playlist `name` is currently metadata only;
+/// it may be surfaced in a future API for display purposes.
+pub fn ensure_playlist<'a>(
+    _k: &'a str,
+    v: Playlist,
+    m: &Mod,
+    set: &'a mut HashSet<Id>,
+    map: &'a mut HashMap<UniqueKey, StaticSoundData>,
+    smap: &'a mut HashMap<UniqueKey, Settings>,
+) -> Result<(), Error> {
+    for (song_id, song) in v.songs {
+        let existed = ensure_key_unique_or_inserted(song_id.as_str())?;
+        let Audio { file, settings } = (&song).into();
+        let c_string = std::ffi::CString::new(song_id.as_str())?;
+        let cname = CName::new(song_id.as_str());
+        let key = UniqueKey(cname);
+        ensure(
+            song_id.as_str(),
+            key,
+            file,
+            m,
+            Usage::Streaming,
+            settings,
+            set,
+            map,
+            smap,
+            Source::Playlist,
+        )?;
+
+        if !existed {
+            CNamePool::add_cstr(&c_string);
+        }
     }
     Ok(())
 }

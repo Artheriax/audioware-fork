@@ -123,3 +123,36 @@ music:
 |-----------------|---------------|-----------|
 | usage           | `streaming`   |✅         |
 | volume settings | `MusicVolume` |⛔         |
+
+## Playlist
+
+`playlist` defines named groups of songs. Each song inside a playlist is
+registered as its own audio ID and routed to the `radioport` track, which
+is controlled by the `RadioportVolume` game setting.
+
+This is the section to use for custom radio stations that should respond
+to the pocket radio volume slider (on foot) rather than the car radio
+slider.
+
+```yml
+version: 1.0.0
+playlist:
+  my_radio_station:
+    name: "88.7 Neon Nights"
+    songs:
+      song_one: ./song1.mp3
+      song_two:
+        file: ./song2.mp3
+        settings:
+          volume: 0.5
+```
+
+| Default         |                  | Editable? |
+|-----------------|------------------|-----------|
+| usage           | `streaming`      | (fixed)   |
+| volume settings | `RadioportVolume`| (fixed)   |
+
+The playlist `name` is currently metadata only. Each song's audio ID is
+its key inside the `songs` map - that's the name you pass to `Play`.
+
+e.g. `GameInstance.GetAudioSystem(game).Play(n"song_one")`

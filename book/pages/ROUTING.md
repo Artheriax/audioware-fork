@@ -17,6 +17,8 @@ Depending on which section audio is defined, it will be affected by a specific g
 | onos   | DialogueVolume 
 | voices | DialogueVolume 
 | music  | MusicVolume    
+| jingles| CarRadioVolume 
+| playlist | RadioportVolume 
 
 All audio are always affected by `MasterVolume`, as expected.
 ```

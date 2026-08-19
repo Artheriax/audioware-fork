@@ -48,7 +48,6 @@ pub struct Manifest {
     pub scene_dialogs: Option<HashMap<u64, SceneDialogs>>,
 }
 
-// until proper implementations for 'playlist' and 'jingles' are added
 impl fmt::Debug for Manifest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Manifest")
@@ -57,6 +56,7 @@ impl fmt::Debug for Manifest {
             .field("onos", &self.onos)
             .field("voices", &self.voices)
             .field("music", &self.music)
+            .field("playlist", &self.playlist)
             .field("dialogs", &self.scene_dialogs)
             .finish_non_exhaustive()
     }

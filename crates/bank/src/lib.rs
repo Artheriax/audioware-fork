@@ -299,6 +299,24 @@ impl Banks {
                         };
                     }
                 }
+                if let Some(playlist) = manifest.playlist {
+                    for (key, value) in playlist {
+                        match ensure_playlist(
+                            key.as_str(),
+                            value,
+                            &m,
+                            &mut ids,
+                            &mut uniques,
+                            &mut unique_settings,
+                        ) {
+                            Ok(x) => x,
+                            Err(e) => {
+                                errors.push(e);
+                                continue;
+                            }
+                        };
+                    }
+                }
                 if let Some(scene_dialogs) = manifest.scene_dialogs {
                     for (key, value) in scene_dialogs {
                         match ensure_scene_dialogs(
