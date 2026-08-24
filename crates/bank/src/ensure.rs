@@ -740,11 +740,6 @@ pub fn ensure_jingles<'a>(
 }
 
 /// Ensure [Playlist] guarantees are upheld.
-///
-/// Each song inside a playlist is registered as its own `Id` with
-/// `Source::Playlist`, which routes it to the `radioport` track (controlled
-/// by `RadioportVolume`). The playlist `name` is currently metadata only;
-/// it may be surfaced in a future API for display purposes.
 pub fn ensure_playlist<'a>(
     _k: &'a str,
     v: Playlist,
